@@ -6,6 +6,7 @@ from django.utils import timezone
 
 from .models import City, IDC, Host
 from host_management_system.utils import check_need_params
+from .tasks import ping_host_task
 
 
 class CityListView(View):
@@ -25,9 +26,8 @@ class CityListView(View):
         code = body.get("code").lower()
 
         # 判断是否已存在
-        raw_data = list(City.objects.filter(name=name, code=code).values("id", "is_deleted"))
-        if raw_data:
-            item = raw_data[0]
+        item = City.objects.filter(name=name, code=code).values("id", "is_deleted").first()
+        if item:
             if item.get("is_deleted"):
                 City.objects.filter(name=name, code=code).update(is_deleted=False, updated_at=timezone.now())
                 return JsonResponse({"code": 0, "msg": "success"})
@@ -40,9 +40,9 @@ class CityListView(View):
 
 class CityDetailView(View):
     def get(self, request, pk):
-        raw_data = list(City.objects.filter(id=pk, is_deleted=False).values("id", "name", "code"))
-        if raw_data:
-            return JsonResponse({"code": 0, "msg": "success", "data": raw_data[0]})
+        data = City.objects.filter(id=pk, is_deleted=False).values("id", "name", "code").first()
+        if data:
+            return JsonResponse({"code": 0, "msg": "success", "data": data})
         else:
             return JsonResponse({"code": 1, "msg": "不存在该城市"})
 
@@ -56,8 +56,8 @@ class CityDetailView(View):
             return JsonResponse({"code": 1, "msg": f"缺少必填参数: {', '.join(miss_params)}"})
 
         # 判断是否已存在
-        raw_data = list(City.objects.filter(id=pk, is_deleted=False).values("id"))
-        if not raw_data:
+        item = City.objects.filter(id=pk, is_deleted=False).values("id").first()
+        if item is None:
             return JsonResponse({"code": 1, "msg": "不存在该城市"})
 
         City.objects.filter(id=pk, is_deleted=False).update(**body, updated_at=timezone.now())
@@ -65,8 +65,8 @@ class CityDetailView(View):
 
     def delete(self, request, pk):
         # 判断是否已存在
-        raw_data = list(City.objects.filter(id=pk, is_deleted=False).values("id"))
-        if not raw_data:
+        item = City.objects.filter(id=pk, is_deleted=False).values("id").first()
+        if item is None:
             return JsonResponse({"code": 1, "msg": "不存在该城市"})
 
         City.objects.filter(id=pk).update(is_deleted=True, deleted_at=timezone.now(), updated_at=timezone.now())
@@ -95,9 +95,8 @@ class IDCListView(View):
         phone = body.get("phone")
 
         # 判断是否已存在
-        raw_data = list(IDC.objects.filter(name=name, code=code, city_id=city_id).values("id", "is_deleted"))
-        if raw_data:
-            item = raw_data[0]
+        item = IDC.objects.filter(name=name, code=code, city_id=city_id).values("id", "is_deleted").first()
+        if item:
             if item.get("is_deleted"):
                 IDC.objects.filter(name=name, code=code, city_id=city_id).update(
                     address=address, contact=contact, phone=phone, is_deleted=False, updated_at=timezone.now())
@@ -111,10 +110,10 @@ class IDCListView(View):
 
 class IDCDetailView(View):
     def get(self, request, pk):
-        raw_data = list(IDC.objects.filter(id=pk, is_deleted=False).values(
-            "id", "name", "code", "city_id", "address", "contact", "phone"))
-        if raw_data:
-            return JsonResponse({"code": 0, "msg": "success", "data": raw_data[0]})
+        data = IDC.objects.filter(id=pk, is_deleted=False).values(
+            "id", "name", "code", "city_id", "address", "contact", "phone").first()
+        if data:
+            return JsonResponse({"code": 0, "msg": "success", "data": data})
         else:
             return JsonResponse({"code": 1, "msg": "不存在该机房"})
 
@@ -128,8 +127,8 @@ class IDCDetailView(View):
             return JsonResponse({"code": 1, "msg": f"缺少必填参数: {', '.join(miss_params)}"})
 
         # 判断是否已存在
-        raw_data = list(IDC.objects.filter(id=pk, is_deleted=False).values("id"))
-        if not raw_data:
+        item = IDC.objects.filter(id=pk, is_deleted=False).values("id").first()
+        if item is None:
             return JsonResponse({"code": 1, "msg": "不存在该机房"})
 
         IDC.objects.filter(id=pk, is_deleted=False).update(**body, updated_at=timezone.now())
@@ -137,8 +136,8 @@ class IDCDetailView(View):
 
     def delete(self, request, pk):
         # 判断是否已存在
-        raw_data = list(IDC.objects.filter(id=pk, is_deleted=False).values("id"))
-        if not raw_data:
+        item = IDC.objects.filter(id=pk, is_deleted=False).values("id").first()
+        if item is None:
             return JsonResponse({"code": 1, "msg": "不存在该机房"})
 
         IDC.objects.filter(id=pk).update(is_deleted=True, deleted_at=timezone.now(), updated_at=timezone.now())
@@ -166,9 +165,8 @@ class HostListView(View):
         status = body.get("status")
 
         # 判断是否已存在
-        raw_data = list(Host.objects.filter(hostname=hostname, city_id=city_id, idc_id=idc_id).values("id", "is_deleted"))
-        if raw_data:
-            item = raw_data[0]
+        item = Host.objects.filter(hostname=hostname, city_id=city_id, idc_id=idc_id).values("id", "is_deleted").first()
+        if item:
             if item.get("is_deleted"):
                 Host.objects.filter(hostname=hostname, city_id=city_id, idc_id=idc_id).update(
                     is_deleted=False, updated_at=timezone.now())
@@ -182,10 +180,10 @@ class HostListView(View):
 
 class HostDetailView(View):
     def get(self, request, pk):
-        raw_data = list(Host.objects.filter(id=pk, is_deleted=False).values(
-            "id", "hostname", "ip_address", "city_id", "idc_id", "status"))
-        if raw_data:
-            return JsonResponse({"code": 0, "msg": "success", "data": raw_data[0]})
+        data = Host.objects.filter(id=pk, is_deleted=False).values(
+            "id", "hostname", "ip_address", "city_id", "idc_id", "status").first()
+        if data:
+            return JsonResponse({"code": 0, "msg": "success", "data": data})
         else:
             return JsonResponse({"code": 1, "msg": "不存在该主机"})
 
@@ -199,8 +197,8 @@ class HostDetailView(View):
             return JsonResponse({"code": 1, "msg": f"缺少必填参数: {', '.join(miss_params)}"})
 
         # 判断是否已存在
-        raw_data = list(Host.objects.filter(id=pk, is_deleted=False).values("id"))
-        if not raw_data:
+        item = Host.objects.filter(id=pk, is_deleted=False).values("id").first()
+        if item is None:
             return JsonResponse({"code": 1, "msg": "不存在该主机"})
 
         Host.objects.filter(id=pk, is_deleted=False).update(**body, updated_at=timezone.now())
@@ -208,9 +206,20 @@ class HostDetailView(View):
 
     def delete(self, request, pk):
         # 判断是否已存在
-        raw_data = list(Host.objects.filter(id=pk, is_deleted=False).values("id"))
-        if not raw_data:
+        item = Host.objects.filter(id=pk, is_deleted=False).values("id").first()
+        if item is None:
             return JsonResponse({"code": 1, "msg": "不存在该主机"})
 
         Host.objects.filter(id=pk).update(is_deleted=True, deleted_at=timezone.now(), updated_at=timezone.now())
         return JsonResponse({"code": 0, "msg": "success"})
+
+
+def host_ping_api(request, pk):
+    """探测主机是否 ping 可达接口"""
+    item = Host.objects.filter(id=pk, is_deleted=False).values_list("ip_address").first()
+    if item is not None:
+        ip_address = item[0]
+        ping_host_task.delay(pk, ip_address)
+        return JsonResponse({"code": 0, "msg": "success"})
+    else:
+        return JsonResponse({"code": 1, "msg": "不存在该主机"})
