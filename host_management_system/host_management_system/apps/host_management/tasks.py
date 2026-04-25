@@ -42,3 +42,15 @@ def change_all_hosts_passwords_task(self):
             logger.error(f"执行随机修改每台主机密码任务时发生错误: {result.stderr.decode()}")
     except Exception as e:
         logger.error(f"执行随机修改每台主机密码任务时发生错误: {e}\n{traceback.format_exc()}")
+
+
+@celery_app.task(bind=True, name="host_statistics_task")
+def host_statistics_task(self):
+    """按城市和机房维度统计主机数量任务"""
+    command = ["python", "manage.py", "host_statistics"]
+    try:
+        result = subprocess.run(command, capture_output=True)
+        if result.returncode != 0:
+            logger.error(f"按城市和机房维度统计主机数量任务: {result.stderr.decode()}")
+    except Exception as e:
+        logger.error(f"按城市和机房维度统计主机数量任务: {e}\n{traceback.format_exc()}")

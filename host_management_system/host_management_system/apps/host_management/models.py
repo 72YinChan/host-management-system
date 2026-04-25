@@ -40,7 +40,6 @@ class Host(models.Model):
     STATUS_CHOICES = [
         ("active", "活跃"),
         ("inactive", "不活跃"),
-        ("maintenance", "维护中"),
     ]
 
     hostname = models.CharField(max_length=100, null=False, verbose_name="主机名")

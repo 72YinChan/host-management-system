@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     "host_management",
+    "statistic",
 ]
 
 MIDDLEWARE = [
@@ -138,6 +139,10 @@ CELERY_BEAT_SCHEDULE = {
     "change-host-password-every-8-hours": {
         "task": "change_all_hosts_passwords_task",
         "schedule": crontab(minute=0, hour="0,8,16"),
+    },
+    "host-statistics-every-day": {
+        "task": "host_statistics_task",
+        "schedule": crontab(minute=0, hour=0),
     },
 }
 
