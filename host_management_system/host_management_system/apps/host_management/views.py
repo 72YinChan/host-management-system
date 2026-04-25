@@ -5,7 +5,12 @@ from django.views.generic import View
 from django.utils import timezone
 
 from .models import City, IDC, Host
-from host_management_system.utils import check_need_params
+from host_management_system.utils import (
+    check_need_params,
+    generate_password,
+    encrypt_password,
+    decrypt_password,
+)
 from .tasks import ping_host_task
 
 
@@ -147,14 +152,16 @@ class IDCDetailView(View):
 class HostListView(View):
     def get(self, request):
         data = list(Host.objects.filter(is_deleted=False).values(
-            "id", "hostname", "ip_address", "city_id", "idc_id", "status"))
+            "id", "hostname", "ip_address", "city_id", "idc_id", "status", "password", "password_changed_at"))
+        for item in data:
+            item["password"] = decrypt_password(item["password"])
         return JsonResponse({"code": 0, "msg": "success", "data": data})
 
     def post(self, request):
         body = json.loads(request.body.decode())
 
         # 判断参数合法性
-        need_params = ["hostname", "ip_address", "city_id", "idc_id", "status"]
+        need_params = ["hostname", "ip_address", "city_id", "idc_id"]
         miss_params = check_need_params(body, need_params)
         if miss_params:
             return JsonResponse({"code": 1, "msg": f"缺少必填参数: {', '.join(miss_params)}"})
@@ -162,7 +169,7 @@ class HostListView(View):
         ip_address = body.get("ip_address")
         city_id = body.get("city_id")
         idc_id = body.get("idc_id")
-        status = body.get("status")
+        password = encrypt_password(generate_password())
 
         # 判断是否已存在
         item = Host.objects.filter(hostname=hostname, city_id=city_id, idc_id=idc_id).values("id", "is_deleted").first()
@@ -174,15 +181,16 @@ class HostListView(View):
             else:
                 return JsonResponse({"code": 2, "msg": "已存在相同的主机信息"})
 
-        Host.objects.create(hostname=hostname, ip_address=ip_address, city_id=city_id, idc_id=idc_id, status=status)
+        Host.objects.create(hostname=hostname, ip_address=ip_address, city_id=city_id, idc_id=idc_id, password=password)
         return JsonResponse({"code": 0, "msg": "success"})
 
 
 class HostDetailView(View):
     def get(self, request, pk):
         data = Host.objects.filter(id=pk, is_deleted=False).values(
-            "id", "hostname", "ip_address", "city_id", "idc_id", "status").first()
+            "id", "hostname", "ip_address", "city_id", "idc_id", "status", "password", "password_changed_at").first()
         if data:
+            data["password"] = decrypt_password(data["password"])
             return JsonResponse({"code": 0, "msg": "success", "data": data})
         else:
             return JsonResponse({"code": 1, "msg": "不存在该主机"})

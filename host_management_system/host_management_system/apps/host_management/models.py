@@ -49,6 +49,7 @@ class Host(models.Model):
     idc_id = models.IntegerField(null=False, verbose_name="机房ID")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="active", null=False, verbose_name="状态")
     password = models.TextField(null=False, verbose_name="密码")
+    password_changed_at = models.DateTimeField(auto_now=True, verbose_name="密码更改时间")
     is_deleted = models.BooleanField(default=False, null=False, verbose_name="是否删除")
     deleted_at = models.DateTimeField(null=True, verbose_name="删除时间")
     created_at = models.DateTimeField(auto_now_add=True)
