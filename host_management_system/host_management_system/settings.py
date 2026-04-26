@@ -50,10 +50,11 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    # 'django.middleware.csrf.CsrfViewMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "host_management_system.middleware.RequestElapsedTimeMiddleware",
 ]
 
 ROOT_URLCONF = 'host_management_system.urls'
@@ -152,10 +153,10 @@ LOGGING = {
     'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
-            'format': '%(levelname)s %(asctime)s %(module)s %(lineno)d %(message)s',
+            'format': '%(levelname)s[%(asctime)s]%(module)s(%(lineno)d) - %(message)s',
         },
         'simple': {
-            'format': '%(levelname)s %(module)s %(lineno)d %(message)s',
+            'format': '%(levelname)s|%(module)s(%(lineno)d) - %(message)s',
         },
     },
     'filters': {
